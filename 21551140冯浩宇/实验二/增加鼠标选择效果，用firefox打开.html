@@ -1,0 +1,225 @@
+
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script type="text/javascript" src="three.min.js"></script>
+<title>实验二</title>
+<style type="text/css">
+div#canvas-frame {
+    border: none;
+    cursor: pointer;
+    width: 1000px;
+    height: 800px;
+    background-color: #000000;
+}
+</style>
+    <script src="js/Three.js"></script>
+    <script src="js/Detector.js"></script>
+    <script src="js/Stats.js"></script>
+    <script src="js/OrbitControls.js"></script>
+    <script src="js/THREEx.KeyboardState.js"></script>
+    <script src="js/THREEx.FullScreen.js"></script>
+    <script src="js/THREEx.WindowResize.js"></script>
+    <script src="js/jquery-1.9.1.js"></script>
+    <script src="js/jquery-ui.js"></script>
+<script>    
+    var width, height;
+	var SCREEN_WIDTH = window.innerWidth-20, SCREEN_HEIGHT = window.innerHeight-20;
+	var aspct = SCREEN_WIDTH/SCREEN_HEIGHT;
+    var renderer;
+    var projector, mouse = { x: 0, y: 0 }, INTERSECTED;
+    function initThree() {
+        width = document.getElementById('canvas-frame').clientWidth;
+        height = document.getElementById('canvas-frame').clientHeight;
+        renderer = new THREE.WebGLRenderer({
+            antialias : true
+        });
+
+		renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+        document.getElementById('canvas-frame').appendChild(renderer.domElement);
+        document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+        renderer.setClearColorHex(0x000000, 1.0);
+        projector = new THREE.Projector();
+    }
+
+    var camera;
+    function initCamera() {
+        camera = new THREE.PerspectiveCamera(45, aspct, 1, 10000);
+        camera.position.set(300,50, 20);
+        camera.up.x = 0;
+        camera.up.y = 0;
+        camera.up.z = 1;
+        
+        camera.lookAt({x : 0,y : 0,z : 0});
+    }
+    var scene;
+    function initScene() {
+        scene = new THREE.Scene();
+    }
+    var light,light2;
+    function initLight() {
+        light = new THREE.DirectionalLight(0xffffff, 1.0, 0);
+        light.position.set(0, 300, 30);
+        scene.add(light);
+        
+        light2 = new THREE.AmbientLight(0x777777);
+        scene.add(light2);
+    }
+
+
+
+    var sphere1, sphere2,sphere0 ;
+    var sprite1;
+    var canvas1, context1, texture3;
+    function initObject() {
+    	// earth
+    	var texture1  = THREE.ImageUtils.loadTexture('earth.jpg');
+        sphere1 = new THREE.Mesh(new THREE.SphereGeometry(30, 30,30),
+               //new THREE.MeshLambertMaterial({color:0x0ffff0})
+               new THREE.MeshLambertMaterial({  map: texture1})
+        );
+        sphere1.name = "earth";
+        scene.add(sphere1);
+        sphere1.position.set(50,300,0);
+
+        //    moon
+	    var texture2  = THREE.ImageUtils.loadTexture('moon.jpg');
+        sphere2 = new THREE.Mesh(
+                new THREE.SphereGeometry(8,20,20),
+                new THREE.MeshLambertMaterial({map:texture2})
+            );
+        sphere2.name = "moon";
+         scene.add(sphere2);
+         sphere2.position.set(0,250,0);
+         
+	    // sun
+	    var texture0  = THREE.ImageUtils.loadTexture('sun.jpg');
+        sphere0 = new THREE.Mesh(
+                new THREE.SphereGeometry(50,20,20),
+                new THREE.MeshLambertMaterial({map:texture0})
+            );
+        sphere0.name = "sun";
+         scene.add(sphere0);
+         sphere2.position.set(0,0,0);
+
+        canvas1 = document.createElement('canvas');
+        context1 = canvas1.getContext('2d');
+        context1.font = "Bold 20px Arial";
+        context1.fillStyle = "rgba(0,0,0,0.95)";
+        context1.fillText('Hello, world!', 0, 20);
+
+        texture3 = new THREE.Texture(canvas1)
+        texture3.needsUpdate = true;
+        var spriteMaterial = new THREE.SpriteMaterial( { map: texture3, useScreenCoordinates: true, alignment: THREE.SpriteAlignment.topLeft } );
+
+        sprite1 = new THREE.Sprite( spriteMaterial );
+        sprite1.scale.set(200,100,1.0);
+        sprite1.position.set( 5000, 5000, 0 );
+        scene.add( sprite1 );
+    }
+
+    //鼠标点击事件
+    function onDocumentMouseDown( event )
+    {
+        // the following line would stop any other event handler from firing
+        // (such as the mouse's TrackballControls)
+        // event.preventDefault();
+
+        // update sprite position
+        sprite1.position.set( event.clientX, event.clientY - 20, 0 );
+
+        // update the mouse variable
+        mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+        mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    }
+
+    var t=0;
+    var r=0;
+    function loop() {
+        var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
+        projector.unprojectVector( vector, camera );
+        var ray = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+        var intersects = ray.intersectObjects( scene.children );
+
+        if ( intersects.length > 0 )
+        {
+            // if the closest object intersected is not the currently stored intersection object
+            if ( intersects[ 0 ].object != INTERSECTED )
+            {
+                // restore previous intersection object (if it exists) to its original color
+                if ( INTERSECTED )
+                //    INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
+                // store reference to closest object as current intersection object
+                INTERSECTED = intersects[ 0 ].object;
+                // store color of closest object (for later restoration)
+                //INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
+                // set a new color for closest object
+                //INTERSECTED.material.color.setHex( 0xffff00 );
+
+                // update text, if it has a "name" field.
+                if ( intersects[ 0 ].object.name )
+                {
+                    context1.clearRect(0,0,640,480);
+                    var message = intersects[ 0 ].object.name;
+                    var metrics = context1.measureText(message);
+                    var width = metrics.width;
+                    context1.fillStyle = "rgba(0,0,0,0.95)"; // black border
+                    context1.fillRect( 0,0, width+8,20+8);
+                    context1.fillStyle = "rgba(255,255,255,0.95)"; // white filler
+                    context1.fillRect( 2,2, width+4,20+4 );
+                    context1.fillStyle = "rgba(0,0,0,1)"; // text color
+                    context1.fillText( message, 4,20 );
+                    texture3.needsUpdate = true;
+                }
+                else
+                {
+                    context1.clearRect(0,0,300,300);
+                    texture3.needsUpdate = true;
+                }
+            }
+        }
+        else // there are no intersections
+        {
+            // restore previous intersection object (if it exists) to its original color
+            if ( INTERSECTED )
+            //    INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
+            // remove previous intersection object reference
+            //     by setting current intersection object to "nothing"
+            INTERSECTED = null;
+            context1.clearRect(0,0,300,300);
+            texture3.needsUpdate = true;
+        }
+
+
+        t++;
+	r+=5;
+        renderer.clear();
+	sphere0.rotation.set( Math.PI/2 , t/150, 0 ); 
+        sphere1.rotation.set( Math.PI/2 , t/60, 0 );   
+        sphere2.rotation.set( Math.PI/2 , t/50, 0 );
+
+	sphere1.position.set( 0,-150*Math.sin(t/200) , 150*Math.cos(t/200));
+	sphere2.position.set( 0,-150*Math.sin(t/200)-50*Math.sin(r/200)  , 150*Math.cos(t/200)+50*Math.cos(r/200));
+	
+        renderer.render(scene, camera);
+        window.requestAnimationFrame(loop);
+    }   
+    
+    function threeStart() {
+        initThree();
+        initCamera();
+        initScene();
+        initLight();
+        initObject();
+        loop();
+       //renderer.clear();
+        //renderer.render(scene, camera); 
+    }
+    
+</script>
+</head>
+<body onload="threeStart();">
+    <div id="canvas-frame"></div>
+</body>
+</html>
